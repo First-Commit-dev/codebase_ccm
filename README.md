@@ -353,14 +353,7 @@ result = analyzer.analyze_codebase("./my-project")
 
 ## 📄 License
 
-This project is part of the larger codebase analysis system. Please refer to the main project license.
+MIT
 
-## 🔗 Related Services
-
-- **API Service**: REST API for code analysis requests
-- **Frontend**: Web interface for code exploration
-- **Database**: Storage for analysis results and metadata
-
----
 
 For more information, see the example usage in `example.py` or run the analyzer with `--help` for command-line options. 
