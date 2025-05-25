@@ -1,18 +1,18 @@
-# 增强版多语言代码分析器 Docker镜像
+# Enhanced multi-language code analyzer Docker image
 FROM python:3.10-bullseye
 
 LABEL maintainer="code-analyzer"
 LABEL description="Enhanced multi-language code analyzer with comments and documentation support"
 LABEL version="2.0.0"
 
-# 设置环境变量
+# Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app
 
-# 安装系统依赖
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    # 编译工具
+    # Build tools
     build-essential \
     gcc \
     g++ \
@@ -20,23 +20,23 @@ RUN apt-get update && apt-get install -y \
     git \
     curl \
     wget \
-    # 清理缓存
+    # Clean cache
     && rm -rf /var/lib/apt/lists/*
 
-# 升级pip
+# Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip
 
-# 安装Python依赖
+# Install Python dependencies
 RUN pip install --no-cache-dir \
-    # 核心依赖
+    # Core dependencies
     pathlib \
     typing-extensions \
     dataclasses
 
-# 先安装tree-sitter核心
+# Install tree-sitter core first
 RUN pip install --no-cache-dir tree-sitter
 
-# 安装确实存在的tree-sitter语言包
+# Install available tree-sitter language packages
 RUN pip install --no-cache-dir \
     tree-sitter-python \
     tree-sitter-javascript \
@@ -47,21 +47,21 @@ RUN pip install --no-cache-dir \
     tree-sitter-go \
     tree-sitter-rust
 
-# 尝试安装其他语言包（如果失败就跳过）
+# Try to install other language packages (skip if failed)
 RUN pip install --no-cache-dir \
     tree-sitter-ruby \
     tree-sitter-php || echo "Ruby/PHP parser not available"
 
-# 剩下的语言用正则表达式备选方案
-# 这样即使某些tree-sitter包不可用，也能分析对应语言
+# For remaining languages, use regex fallback approach
+# This ensures analysis capability even when certain tree-sitter packages are unavailable
 
-# 安装额外的语言工具 (用于备选分析)
+# Install additional language tools (for fallback analysis)
 RUN apt-get update && apt-get install -y \
-    # Java 开发工具
+    # Java development tools
     openjdk-11-jdk \
-    # Go 编译器
+    # Go compiler
     golang-go \
-    # Rust 工具链会在运行时安装
+    # Rust toolchain will be installed at runtime
     curl \
     # Ruby
     ruby \
@@ -69,44 +69,44 @@ RUN apt-get update && apt-get install -y \
     # PHP
     php \
     php-cli \
-    # Node.js (已包含)
-    # C/C++ 工具
+    # Node.js (already included)
+    # C/C++ tools
     clang \
     llvm \
-    # 清理
+    # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# 安装Rust (用于Rust代码分析)
+# Install Rust (for Rust code analysis)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# 创建工作目录
+# Create working directory
 WORKDIR /app
 
-# 复制分析器代码
+# Copy analyzer code
 COPY enhanced_analyzer.py /app/analyzer.py
 
-# 创建输入输出目录
+# Create input/output directories
 RUN mkdir -p /input /output
 
-# 设置权限
+# Set permissions
 RUN chmod +x /app/analyzer.py
 
-# 验证安装
+# Verify installation
 RUN python -c "import ast, json, pathlib; print('✅ Python dependencies OK')"
 
-# 验证core安装（语言包在运行时检查）
+# Verify core installation (language packages checked at runtime)
 RUN python -c "import tree_sitter; print('✅ Tree-sitter core OK')"
 
-# 健康检查
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)" || exit 1
 
-# 默认入口点
+# Default entry point
 ENTRYPOINT ["python", "/app/analyzer.py"]
 CMD ["--input", "/input", "--output", "/output/analysis.json"]
 
-# 元数据
+# Metadata
 LABEL features="functions,classes,imports,exports,comments,docstrings,type_annotations"
 LABEL languages="python,javascript,typescript,java,c,cpp,go,rust,ruby,php"
 LABEL supported_extensions=".py,.js,.jsx,.ts,.tsx,.java,.c,.cpp,.cc,.cxx,.h,.hpp,.go,.rs,.rb,.php"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Python接口调用Docker代码分析器
-支持本地和远程Docker镜像
+Python interface for calling Docker code analyzer
+Supports local and remote Docker images
 """
 
 import os
@@ -15,12 +15,12 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List, Union
 import logging
 
-# 配置日志
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class DockerCodeAnalyzer:
-    """Docker代码分析器调用接口"""
+    """Docker code analyzer calling interface"""
     
     def __init__(self, 
                  docker_image: str = "enhanced-code-analyzer:latest",
@@ -28,105 +28,105 @@ class DockerCodeAnalyzer:
                  memory_limit: str = "2g",
                  cpu_limit: str = "1.0"):
         """
-        初始化分析器
+        Initialize analyzer
         
         Args:
-            docker_image: Docker镜像名
-            timeout: 超时时间(秒)
-            memory_limit: 内存限制
-            cpu_limit: CPU限制
+            docker_image: Docker image name
+            timeout: Timeout in seconds
+            memory_limit: Memory limit
+            cpu_limit: CPU limit
         """
         self.docker_image = docker_image
         self.timeout = timeout
         self.memory_limit = memory_limit
         self.cpu_limit = cpu_limit
         
-        # 验证Docker和镜像
+        # Verify Docker and image
         self._verify_docker()
         self._verify_image()
     
     def _verify_docker(self):
-        """验证Docker是否可用"""
+        """Verify Docker availability"""
         try:
             result = subprocess.run(['docker', '--version'], 
                                   capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
-                raise Exception("Docker不可用")
-            logger.info(f"✅ Docker可用: {result.stdout.strip()}")
+                raise Exception("Docker not available")
+            logger.info(f"✅ Docker available: {result.stdout.strip()}")
         except (subprocess.TimeoutExpired, FileNotFoundError):
-            raise Exception("Docker未安装或不在PATH中")
+            raise Exception("Docker not installed or not in PATH")
     
     def _verify_image(self):
-        """验证Docker镜像是否存在"""
+        """Verify Docker image exists"""
         try:
             result = subprocess.run(['docker', 'images', '-q', self.docker_image],
                                   capture_output=True, text=True, timeout=10)
             if not result.stdout.strip():
-                logger.warning(f"⚠️  本地镜像 {self.docker_image} 不存在，尝试拉取...")
+                logger.warning(f"⚠️  Local image {self.docker_image} not found, attempting to pull...")
                 self._pull_image()
             else:
-                logger.info(f"✅ Docker镜像 {self.docker_image} 已找到")
+                logger.info(f"✅ Docker image {self.docker_image} found")
         except Exception as e:
-            raise Exception(f"验证Docker镜像失败: {e}")
+            raise Exception(f"Failed to verify Docker image: {e}")
     
     def _pull_image(self):
-        """拉取Docker镜像"""
+        """Pull Docker image"""
         try:
-            logger.info(f"🔄 正在拉取镜像 {self.docker_image}...")
+            logger.info(f"🔄 Pulling image {self.docker_image}...")
             result = subprocess.run(['docker', 'pull', self.docker_image],
                                   capture_output=True, text=True, timeout=300)
             if result.returncode == 0:
-                logger.info(f"✅ 镜像拉取成功")
+                logger.info(f"✅ Image pull successful")
             else:
-                raise Exception(f"拉取失败: {result.stderr}")
+                raise Exception(f"Pull failed: {result.stderr}")
         except subprocess.TimeoutExpired:
-            raise Exception("镜像拉取超时")
+            raise Exception("Image pull timeout")
     
     def analyze_codebase(self, 
                         codebase_path: Union[str, Path],
                         output_path: Optional[Union[str, Path]] = None,
                         exclude_patterns: Optional[List[str]] = None) -> Dict[str, Any]:
         """
-        分析代码库
+        Analyze codebase
         
         Args:
-            codebase_path: 要分析的代码路径
-            output_path: 输出文件路径（可选）
-            exclude_patterns: 排除的文件模式（可选）
+            codebase_path: Path to code to analyze
+            output_path: Output file path (optional)
+            exclude_patterns: File patterns to exclude (optional)
             
         Returns:
-            分析结果字典
+            Analysis result dictionary
         """
         codebase_path = Path(codebase_path).resolve()
         
         if not codebase_path.exists():
-            raise FileNotFoundError(f"代码路径不存在: {codebase_path}")
+            raise FileNotFoundError(f"Code path does not exist: {codebase_path}")
         
         task_id = str(uuid.uuid4())[:8]
-        logger.info(f"🚀 开始分析代码库: {codebase_path}")
-        logger.info(f"📋 任务ID: {task_id}")
+        logger.info(f"🚀 Starting codebase analysis: {codebase_path}")
+        logger.info(f"📋 Task ID: {task_id}")
         
         with tempfile.TemporaryDirectory(prefix=f"analyzer-{task_id}-") as temp_dir:
             temp_output = Path(temp_dir) / "output"
             temp_output.mkdir()
             
-            # 运行Docker分析
+            # Run Docker analysis
             start_time = time.time()
             success = self._run_docker_container(codebase_path, temp_output, task_id)
             duration = time.time() - start_time
             
             if not success:
-                raise Exception("Docker分析失败")
+                raise Exception("Docker analysis failed")
             
-            # 读取结果
+            # Read results
             result_file = temp_output / "analysis.json"
             if not result_file.exists():
-                raise Exception("分析结果文件未生成")
+                raise Exception("Analysis result file not generated")
             
             with open(result_file, 'r', encoding='utf-8') as f:
                 result = json.load(f)
             
-            # 添加分析元数据
+            # Add analysis metadata
             result['analysis_info'] = {
                 'task_id': task_id,
                 'duration_seconds': round(duration, 2),
@@ -135,42 +135,42 @@ class DockerCodeAnalyzer:
                 'timestamp': time.time()
             }
             
-            # 保存到指定路径
+            # Save to specified path
             if output_path:
                 output_path = Path(output_path).resolve()
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(output_path, 'w', encoding='utf-8') as f:
                     json.dump(result, f, indent=2, ensure_ascii=False)
-                logger.info(f"💾 结果已保存到: {output_path}")
+                logger.info(f"💾 Results saved to: {output_path}")
             
-            # 打印统计信息
+            # Print statistics
             self._print_summary(result, duration)
             
             return result
     
     def _run_docker_container(self, input_path: Path, output_path: Path, task_id: str) -> bool:
-        """运行Docker容器"""
+        """Run Docker container"""
         
         container_name = f"analyzer-{task_id}"
         
         docker_cmd = [
             'docker', 'run',
-            '--rm',                              # 自动删除容器
-            '--name', container_name,            # 容器名称
-            '-v', f'{input_path}:/input:ro',     # 只读挂载输入
-            '-v', f'{output_path}:/output:rw',   # 可写挂载输出
-            '--memory', self.memory_limit,       # 内存限制
-            '--cpus', self.cpu_limit,           # CPU限制
-            '--network', 'none',                 # 断网运行
-            '--user', 'root',                   # 需要写入权限
-            self.docker_image,                   # 镜像名
-            '--input', '/input',                # 分析器参数
-            '--output', '/output/analysis.json' # 输出文件
+            '--rm',                              # Auto-remove container
+            '--name', container_name,            # Container name
+            '-v', f'{input_path}:/input:ro',     # Read-only mount input
+            '-v', f'{output_path}:/output:rw',   # Read-write mount output
+            '--memory', self.memory_limit,       # Memory limit
+            '--cpus', self.cpu_limit,           # CPU limit
+            '--network', 'none',                 # Run without network
+            '--user', 'root',                   # Need write permissions
+            self.docker_image,                   # Image name
+            '--input', '/input',                # Analyzer parameters
+            '--output', '/output/analysis.json' # Output file
         ]
         
         try:
-            logger.info(f"🐳 启动Docker容器: {container_name}")
-            logger.debug(f"Docker命令: {' '.join(docker_cmd)}")
+            logger.info(f"🐳 Starting Docker container: {container_name}")
+            logger.debug(f"Docker command: {' '.join(docker_cmd)}")
             
             result = subprocess.run(
                 docker_cmd,
@@ -180,235 +180,242 @@ class DockerCodeAnalyzer:
             )
             
             if result.returncode == 0:
-                logger.info("✅ Docker分析完成")
+                logger.info("✅ Docker analysis complete")
                 if result.stdout.strip():
-                    logger.info("📄 分析器输出:")
+                    logger.info("📄 Analyzer output:")
                     for line in result.stdout.strip().split('\n'):
                         logger.info(f"   {line}")
                 return True
             else:
-                logger.error(f"❌ Docker分析失败 (退出码: {result.returncode})")
+                logger.error(f"❌ Docker analysis failed (exit code: {result.returncode})")
                 if result.stderr:
-                    logger.error(f"错误信息: {result.stderr}")
+                    logger.error(f"Error message: {result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.error(f"❌ Docker分析超时 ({self.timeout}秒)")
-            # 尝试停止容器
+            logger.error(f"❌ Docker analysis timeout ({self.timeout} seconds)")
+            # Try to stop container
             try:
                 subprocess.run(['docker', 'stop', container_name], 
                              capture_output=True, timeout=10)
-                logger.info(f"🛑 已停止超时容器: {container_name}")
             except:
                 pass
             return False
-            
         except Exception as e:
-            logger.error(f"❌ 运行Docker容器失败: {e}")
+            logger.error(f"❌ Docker execution error: {e}")
             return False
     
     def _print_summary(self, result: Dict[str, Any], duration: float):
-        """打印分析摘要"""
-        stats = result.get('stats', {})
+        """Print analysis summary"""
+        metadata = result.get('metadata', {})
         
-        logger.info(f"\n📊 分析完成摘要:")
-        logger.info(f"   ⏱️  耗时: {duration:.2f}秒")
-        logger.info(f"   📁 文件数: {stats.get('total_files', 0)}")
-        logger.info(f"   🔧 函数数: {stats.get('total_functions', 0)}")
-        logger.info(f"   📦 类数: {stats.get('total_classes', 0)}")
-        logger.info(f"   💬 注释数: {stats.get('total_comments', 0)}")
+        logger.info("📊 Analysis Summary:")
+        logger.info(f"   - Duration: {duration:.2f} seconds")
+        logger.info(f"   - Total nodes: {metadata.get('total_nodes', 'N/A')}")
+        logger.info(f"   - Total relationships: {metadata.get('total_relationships', 'N/A')}")
+        logger.info(f"   - Resolution rate: {metadata.get('resolution_rate', 'N/A'):.1f}%")
         
-        languages = stats.get('languages', {})
-        if languages:
-            logger.info(f"   🌍 语言分布:")
-            for lang, count in languages.items():
-                logger.info(f"      - {lang}: {count} 个文件")
+        node_counts = metadata.get('node_type_counts', {})
+        if node_counts:
+            logger.info("   - Node types:")
+            for node_type, count in node_counts.items():
+                logger.info(f"     * {node_type}: {count}")
     
     def analyze_file(self, file_path: Union[str, Path], output_path: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
         """
-        分析单个文件
+        Analyze single file
         
         Args:
-            file_path: 文件路径
-            output_path: 输出路径（可选）
+            file_path: File path to analyze
+            output_path: Output file path (optional)
             
         Returns:
-            分析结果
+            Analysis result dictionary
         """
-        file_path = Path(file_path).resolve()
+        file_path = Path(file_path)
         
-        if not file_path.is_file():
-            raise FileNotFoundError(f"文件不存在: {file_path}")
+        if not file_path.exists():
+            raise FileNotFoundError(f"File does not exist: {file_path}")
         
-        # 创建临时目录，包含这个文件
+        # Create temporary directory containing only this file
         with tempfile.TemporaryDirectory() as temp_dir:
-            temp_input = Path(temp_dir) / "input"
-            temp_input.mkdir()
+            temp_file = Path(temp_dir) / file_path.name
+            shutil.copy2(file_path, temp_file)
             
-            # 复制文件到临时目录
-            shutil.copy2(file_path, temp_input / file_path.name)
-            
-            # 分析临时目录
-            return self.analyze_codebase(temp_input, output_path)
+            # Analyze the temporary directory
+            return self.analyze_codebase(temp_dir, output_path)
     
     def get_functions_with_comments(self, result: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """获取包含注释的函数"""
+        """Get functions with comments"""
         functions_with_comments = []
-        for func in result.get('functions', []):
-            if func.get('docstring') or (func.get('comments') and len(func['comments']) > 0):
-                functions_with_comments.append(func)
+        for node in result.get('nodes', []):
+            if node.get('node_type') == 'function' and node.get('documentation'):
+                functions_with_comments.append(node)
         return functions_with_comments
     
     def get_complex_functions(self, result: Dict[str, Any], min_params: int = 3) -> List[Dict[str, Any]]:
-        """获取复杂函数（参数较多）"""
+        """Get complex functions (with many parameters)"""
         complex_functions = []
-        for func in result.get('functions', []):
-            if len(func.get('parameters', [])) >= min_params:
-                complex_functions.append(func)
+        for node in result.get('nodes', []):
+            if node.get('node_type') == 'function':
+                params = node.get('parameters', [])
+                if len(params) >= min_params:
+                    complex_functions.append(node)
         return complex_functions
     
     def generate_summary_report(self, result: Dict[str, Any], output_path: Optional[Union[str, Path]] = None) -> str:
-        """生成摘要报告"""
-        stats = result.get('stats', {})
+        """Generate summary report"""
         
-        report = f"""
-# 代码分析报告
-
-## 基本统计
-- **总文件数**: {stats.get('total_files', 0)}
-- **总函数数**: {stats.get('total_functions', 0)}
-- **总类数**: {stats.get('total_classes', 0)}
-- **总注释数**: {stats.get('total_comments', 0)}
-- **分析时间**: {result.get('analysis_info', {}).get('duration_seconds', 0)}秒
-
-## 语言分布
-"""
+        metadata = result.get('metadata', {})
+        nodes = result.get('nodes', [])
         
-        languages = stats.get('languages', {})
-        for lang, count in languages.items():
-            report += f"- **{lang}**: {count} 个文件\n"
+        # Statistics
+        total_nodes = len(nodes)
+        node_types = {}
+        languages = {}
         
-        # 添加函数统计
+        for node in nodes:
+            node_type = node.get('node_type', 'unknown')
+            language = node.get('language', 'unknown')
+            
+            node_types[node_type] = node_types.get(node_type, 0) + 1
+            languages[language] = languages.get(language, 0) + 1
+        
+        # Generate report
+        report_lines = [
+            "# Code Analysis Summary Report",
+            "",
+            "## Overview",
+            f"- Total nodes: {total_nodes}",
+            f"- Total relationships: {metadata.get('total_relationships', 'N/A')}",
+            f"- Resolution rate: {metadata.get('resolution_rate', 'N/A'):.1f}%",
+            f"- Analyzer version: {metadata.get('analyzer_version', 'N/A')}",
+            "",
+            "## Node Type Distribution",
+        ]
+        
+        for node_type, count in sorted(node_types.items()):
+            percentage = (count / total_nodes * 100) if total_nodes > 0 else 0
+            report_lines.append(f"- {node_type}: {count} ({percentage:.1f}%)")
+        
+        report_lines.extend([
+            "",
+            "## Language Distribution",
+        ])
+        
+        for language, count in sorted(languages.items()):
+            percentage = (count / total_nodes * 100) if total_nodes > 0 else 0
+            report_lines.append(f"- {language}: {count} ({percentage:.1f}%)")
+        
+        # Functions with documentation
         functions_with_docs = self.get_functions_with_comments(result)
+        report_lines.extend([
+            "",
+            "## Documentation Coverage",
+            f"- Functions with documentation: {len(functions_with_docs)}",
+        ])
+        
+        # Complex functions
         complex_functions = self.get_complex_functions(result)
+        report_lines.extend([
+            "",
+            "## Complex Functions (3+ parameters)",
+            f"- Count: {len(complex_functions)}",
+        ])
         
-        report += f"""
-## 代码质量
-- **有文档的函数**: {len(functions_with_docs)} 个
-- **复杂函数(3+参数)**: {len(complex_functions)} 个
-- **文档覆盖率**: {len(functions_with_docs)/max(stats.get('total_functions', 1), 1)*100:.1f}%
-
-## 示例函数
-"""
+        if complex_functions:
+            report_lines.append("- List:")
+            for func in complex_functions[:10]:  # Show top 10
+                name = func.get('name', 'unknown')
+                param_count = len(func.get('parameters', []))
+                report_lines.append(f"  * {name} ({param_count} parameters)")
         
-        # 显示前几个有文档的函数
-        for i, func in enumerate(functions_with_docs[:5], 1):
-            report += f"""
-### {i}. {func['name']} ({func['language']})
-- **文件**: {func['file_path']}
-- **参数**: {', '.join(func.get('parameters', []))}
-- **文档**: {func.get('docstring', 'N/A')[:100]}...
-"""
+        report = "\n".join(report_lines)
         
+        # Save to file if specified
         if output_path:
             output_path = Path(output_path)
             output_path.parent.mkdir(parents=True, exist_ok=True)
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(report)
-            logger.info(f"📄 报告已保存到: {output_path}")
+            logger.info(f"📄 Summary report saved to: {output_path}")
         
         return report
 
-# 便捷函数
+# Convenience functions
 def analyze_code(codebase_path: Union[str, Path], 
                 output_path: Optional[Union[str, Path]] = None,
                 docker_image: str = "enhanced-code-analyzer:latest") -> Dict[str, Any]:
     """
-    一键代码分析
+    Convenience function to analyze codebase
     
     Args:
-        codebase_path: 代码路径
-        output_path: 输出路径（可选）
-        docker_image: Docker镜像名
+        codebase_path: Path to code to analyze
+        output_path: Output file path (optional)
+        docker_image: Docker image to use
         
     Returns:
-        分析结果
+        Analysis result dictionary
     """
-    analyzer = DockerCodeAnalyzer(docker_image)
+    analyzer = DockerCodeAnalyzer(docker_image=docker_image)
     return analyzer.analyze_codebase(codebase_path, output_path)
 
 def analyze_file(file_path: Union[str, Path],
                 output_path: Optional[Union[str, Path]] = None,
                 docker_image: str = "enhanced-code-analyzer:latest") -> Dict[str, Any]:
     """
-    一键文件分析
+    Convenience function to analyze single file
     
     Args:
-        file_path: 文件路径
-        output_path: 输出路径（可选）
-        docker_image: Docker镜像名
+        file_path: File path to analyze
+        output_path: Output file path (optional)
+        docker_image: Docker image to use
         
     Returns:
-        分析结果
+        Analysis result dictionary
     """
-    analyzer = DockerCodeAnalyzer(docker_image)
+    analyzer = DockerCodeAnalyzer(docker_image=docker_image)
     return analyzer.analyze_file(file_path, output_path)
 
-# 使用示例和测试
 def main():
-    """示例用法"""
-    import sys
+    """Command line interface"""
+    import argparse
     
-    if len(sys.argv) < 2:
-        print("用法:")
-        print("  python docker_analyzer.py <代码路径> [输出路径]")
-        print("\n示例:")
-        print("  python docker_analyzer.py ./my-project")
-        print("  python docker_analyzer.py ./src ./analysis.json")
-        print("  python docker_analyzer.py single_file.py")
-        return
+    parser = argparse.ArgumentParser(description='Docker Code Analyzer Interface')
+    parser.add_argument('path', help='Path to code file or directory to analyze')
+    parser.add_argument('--output', '-o', help='Output file path')
+    parser.add_argument('--image', default='enhanced-code-analyzer:latest', 
+                       help='Docker image to use')
+    parser.add_argument('--report', help='Generate summary report to specified path')
+    parser.add_argument('--timeout', type=int, default=600, help='Timeout in seconds')
     
-    code_path = sys.argv[1]
-    output_path = sys.argv[2] if len(sys.argv) > 2 else None
+    args = parser.parse_args()
     
     try:
-        # 检查是文件还是目录
-        path = Path(code_path)
+        # Create analyzer
+        analyzer = DockerCodeAnalyzer(
+            docker_image=args.image,
+            timeout=args.timeout
+        )
+        
+        # Analyze
+        path = Path(args.path)
         if path.is_file():
-            print(f"📄 分析单个文件: {code_path}")
-            result = analyze_file(code_path, output_path)
+            result = analyzer.analyze_file(path, args.output)
         else:
-            print(f"📁 分析代码库: {code_path}")
-            result = analyze_code(code_path, output_path)
+            result = analyzer.analyze_codebase(path, args.output)
         
-        # 创建分析器实例以使用额外功能
-        analyzer = DockerCodeAnalyzer()
+        # Generate report if requested
+        if args.report:
+            analyzer.generate_summary_report(result, args.report)
         
-        # 显示有文档的函数
-        documented_functions = analyzer.get_functions_with_comments(result)
-        if documented_functions:
-            print(f"\n📚 找到 {len(documented_functions)} 个有文档的函数:")
-            for func in documented_functions[:3]:  # 显示前3个
-                print(f"   - {func['name']}: {func.get('docstring', 'No docstring')[:50]}...")
-        
-        # 显示复杂函数
-        complex_functions = analyzer.get_complex_functions(result)
-        if complex_functions:
-            print(f"\n🔧 找到 {len(complex_functions)} 个复杂函数:")
-            for func in complex_functions[:3]:  # 显示前3个
-                params = ', '.join(func.get('parameters', []))
-                print(f"   - {func['name']}({params})")
-        
-        # 生成报告
-        if output_path:
-            report_path = str(output_path).replace('.json', '_report.md')
-            analyzer.generate_summary_report(result, report_path)
-        
-        print(f"\n✅ 分析完成!")
+        print("✅ Analysis complete!")
         
     except Exception as e:
-        print(f"❌ 分析失败: {e}")
+        logger.error(f"❌ Analysis failed: {e}")
         return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    main()
+    exit(main())
