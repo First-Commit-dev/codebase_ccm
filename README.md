@@ -2,6 +2,9 @@
 
 A comprehensive code analysis service that supports 20+ programming languages and outputs unified format compliant with CCM (Canonical Code Model) standard. This service can analyze codebases to extract functions, classes, imports, relationships, and documentation for building code knowledge graphs.
 
+<img src="https://github.com/user-attachments/assets/67177f3d-0313-4f51-a98a-31b0e14b49bf" width="500"/>
+<img src="https://github.com/user-attachments/assets/96c85c3e-9067-4ef4-b702-ae788db1826a" width="500"/>
+
 ## 🚀 Features
 
 ### Multi-Language Support
