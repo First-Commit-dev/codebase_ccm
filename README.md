@@ -1,19 +1,15 @@
-# Repos Service - Multi-Language Code Analyzer
+# Codebase CCM - Multi-Language Code Architecture Analyzer
 
-A comprehensive code analysis service that supports 20+ programming languages and outputs unified format compliant with CCM (Canonical Code Model) standard. This service can analyze codebases to extract functions, classes, imports, relationships, and documentation for building code knowledge graphs.
+A comprehensive code analysis service that supports 20+ programming languages and outputs unified format compliant with CCM (Canonical Code Model) standard. This service can analyze codebases to extract functions, classes, imports, relationships, and documentation for building code knowledge graphs and architecture visualization.
 
-<img src="https://github.com/user-attachments/assets/67177f3d-0313-4f51-a98a-31b0e14b49bf" width="500"/>
-<img src="https://github.com/user-attachments/assets/96c85c3e-9067-4ef4-b702-ae788db1826a" width="500"/>
+<img src="https://github.com/user-attachments/assets/67177f3d-0313-4f51-a98a-31b0e14b49bf" width="350"/>
+<img src="https://github.com/user-attachments/assets/96c85c3e-9067-4ef4-b702-ae788db1826a" width="350"/>
 
-## 🚀 Features
+## 🚀 Core Features
 
 ### Multi-Language Support
 - **Tree-sitter based parsing** for accurate syntax analysis
-- **20+ programming languages** including:
-  - Python, JavaScript, TypeScript
-  - Java, C, C++, Go, Rust
-  - Ruby, PHP, C#, Kotlin, Swift, Scala
-  - Bash, HTML, CSS, JSON, YAML, SQL
+- **20+ programming languages**: Python, JavaScript, TypeScript, Java, C, C++, Go, Rust, Ruby, PHP, C#, Kotlin, Swift, Scala, Bash, HTML, CSS, JSON, YAML, SQL, etc.
 - **Fallback regex parsing** when tree-sitter modules are unavailable
 
 ### Code Analysis Capabilities
@@ -26,13 +22,76 @@ A comprehensive code analysis service that supports 20+ programming languages an
 
 ### Output Formats
 - **CCM (Canonical Code Model)** compliant output for standardized processing
-- **Traditional format** for backward compatibility
+- **Architecture graph format**: Suitable for frontend visualization
 - **JSON output** with comprehensive metadata and statistics
 
-### Deployment Options
-- **Docker containerized** for easy deployment and isolation
-- **Python interface** for direct integration
-- **Command-line interface** for batch processing
+## 📖 Quick Start - Two-Step Usage Workflow
+
+### Step 1: Code Architecture Analysis
+Use `docker_analyzer.analyze_code` to analyze codebase and extract architecture dependencies:
+
+```python
+from docker_analyzer import analyze_code
+
+# Analyze entire codebase to get architecture dependencies
+result = analyze_code("./my-project", "./analysis.json")
+print(f"Found {len(result['nodes'])} code elements")
+print(f"Found {len(result.get('global_relationships', []))} relationships")
+```
+
+**Output**: Generates `analysis.json` file containing all code elements and dependencies (CCM format)
+
+### Step 2: Convert to Architecture Graph
+Use `graph_converter` to convert CCM format to language-agnostic architecture graph format:
+
+```python
+from graph_converter import GraphConverter
+
+# Create converter instance
+converter = GraphConverter()
+
+# Convert analysis result to architecture graph
+graph = converter.convert_analysis_to_graph(
+    analysis_file="analysis.json",
+    output_file="architecture_graph.json"
+)
+
+print(f"Nodes: {len(graph.nodes)}")
+print(f"Edges: {len(graph.edges)}")
+print(f"Packages: {len(graph.packages)}")
+```
+
+**Output**: Generates `architecture_graph.json` file suitable for frontend visualization
+
+### Complete Workflow Example
+
+```python
+# Complete two-step analysis workflow
+from docker_analyzer import analyze_code
+from graph_converter import GraphConverter
+
+# Step 1: Analyze code architecture
+print("🔍 Step 1: Analyzing code architecture...")
+analysis_result = analyze_code(
+    codebase_path="./my-project",
+    output_path="./analysis.json"
+)
+
+# Step 2: Convert to architecture graph
+print("🔄 Step 2: Converting to architecture graph...")
+converter = GraphConverter()
+graph = converter.convert_analysis_to_graph(
+    analysis_file="./analysis.json",
+    output_file="./architecture_graph.json"
+)
+
+print("✅ Analysis complete!")
+print(f"📊 Statistics:")
+print(f"   - Code elements: {len(analysis_result['nodes'])}")
+print(f"   - Architecture nodes: {len(graph.nodes)}")
+print(f"   - Relationships: {len(graph.edges)}")
+print(f"   - Package structure: {len(graph.packages)}")
+```
 
 ## 📋 Requirements
 
@@ -58,96 +117,45 @@ pip install tree-sitter-go tree-sitter-rust tree-sitter-ruby tree-sitter-php
 
 ### Option 1: Docker Deployment (Recommended)
 
-1. **Build the Docker image:**
+1. **Clone the repository:**
 ```bash
-cd backend/repos-service
+git clone https://github.com/First-Commit-dev/codebase_ccm.git
+cd codebase_ccm
+```
+
+2. **Build the Docker image:**
+```bash
 docker build -t enhanced-code-analyzer:latest .
 ```
 
-2. **Verify installation:**
+3. **Verify installation:**
 ```bash
 docker run --rm enhanced-code-analyzer:latest --help
 ```
 
 ### Option 2: Local Python Setup
 
-1. **Install dependencies:**
+1. **Clone the repository:**
+```bash
+git clone https://github.com/First-Commit-dev/codebase_ccm.git
+cd codebase_ccm
+```
+
+2. **Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-2. **Install tree-sitter language modules:**
+3. **Install tree-sitter language modules:**
 ```bash
 # Install available language parsers
 pip install tree-sitter-python tree-sitter-javascript tree-sitter-typescript
 # Add more languages as needed
 ```
 
-## 📖 Usage
+## 📊 Output Format Details
 
-### Docker Interface (Recommended)
-
-#### Analyze a codebase using Python interface:
-```python
-from docker_analyzer import analyze_code
-
-# Analyze entire codebase
-result = analyze_code("./my-project", "./analysis.json")
-print(f"Found {len(result['nodes'])} code elements")
-
-# Analyze single file
-from docker_analyzer import analyze_file
-result = analyze_file("./my-file.py", "./file-analysis.json")
-```
-
-#### Command line usage:
-```bash
-# Analyze codebase
-python docker_analyzer.py ./my-project --output ./analysis.json
-
-# Generate summary report
-python docker_analyzer.py ./my-project --output ./analysis.json --report ./summary.md
-
-# Custom Docker image
-python docker_analyzer.py ./my-project --image my-custom-analyzer:latest
-```
-
-#### Direct Docker usage:
-```bash
-# Analyze codebase
-docker run --rm \
-  -v /path/to/code:/input:ro \
-  -v /path/to/output:/output:rw \
-  enhanced-code-analyzer:latest \
-  --input /input --output /output/analysis.json
-
-# With resource limits
-docker run --rm \
-  --memory 2g --cpus 1.0 \
-  -v /path/to/code:/input:ro \
-  -v /path/to/output:/output:rw \
-  enhanced-code-analyzer:latest
-```
-
-### Direct Python Usage
-
-```python
-from enhanced_analyzer import ComprehensiveMultiLanguageAnalyzer
-
-# Create analyzer instance
-analyzer = ComprehensiveMultiLanguageAnalyzer()
-
-# Analyze repository
-analyzer.analyze_repository("./my-project", "./analysis.json")
-
-# The output will contain both CCM format and traditional format
-```
-
-## 📊 Output Format
-
-### CCM (Canonical Code Model) Format
-
-The service outputs standardized CCM format for interoperability:
+### Step 1 Output: CCM Format (analysis.json)
 
 ```json
 {
@@ -185,21 +193,67 @@ The service outputs standardized CCM format for interoperability:
 }
 ```
 
-### Analysis Statistics
+### Step 2 Output: Architecture Graph Format (architecture_graph.json)
 
-The output includes comprehensive metadata:
+```json
+{
+  "nodes": [
+    {
+      "id": "module_000001",
+      "name": "my_module",
+      "type": "module",
+      "file_path": "/path/to/file.py",
+      "package": "com.example.package",
+      "size": 2,
+      "complexity": 5,
+      "documentation": "Module description"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge_000001",
+      "source": "function_000001",
+      "target": "function_000002",
+      "type": "calls",
+      "weight": 2
+    }
+  ],
+  "packages": [
+    {
+      "id": "com.example",
+      "name": "example",
+      "full_name": "com.example",
+      "children": ["com.example.subpackage"],
+      "type": "package"
+    }
+  ],
+  "statistics": {
+    "total_nodes": 304,
+    "total_edges": 272,
+    "total_packages": 11,
+    "node_types": {
+      "module": 52,
+      "function": 199,
+      "class": 33,
+      "constructor": 20
+    },
+    "complexity": {
+      "average": 1.85,
+      "maximum": 22,
+      "distribution": {
+        "low": 276,
+        "medium": 24,
+        "high": 4,
+        "very_high": 0
+      }
+    }
+  }
+}
+```
 
-- **Node counts** by type (functions, classes, modules)
-- **Language distribution** across the codebase
-- **Relationship resolution rate** for code connections
-- **Documentation coverage** statistics
-- **Complex function analysis** (functions with many parameters)
+## 🔧 Advanced Usage
 
-## 🔧 Configuration
-
-### Docker Configuration
-
-Customize the Docker container behavior:
+### Docker Interface Configuration
 
 ```python
 from docker_analyzer import DockerCodeAnalyzer
@@ -210,21 +264,46 @@ analyzer = DockerCodeAnalyzer(
     memory_limit="2g",     # 2GB memory limit
     cpu_limit="1.0"        # 1 CPU core limit
 )
-```
 
-### Analysis Options
-
-Configure analysis behavior:
-
-```python
-# Exclude patterns
+# Exclude specific file patterns
 result = analyzer.analyze_codebase(
     "./my-project",
     exclude_patterns=["*.test.js", "node_modules/*", "__pycache__/*"]
 )
 ```
 
-## 🏗 Architecture
+### Command Line Usage
+
+```bash
+# Analyze codebase
+python docker_analyzer.py ./my-project --output ./analysis.json
+
+# Convert to architecture graph
+python graph_converter.py analysis.json -o architecture_graph.json
+
+# Generate summary report
+python docker_analyzer.py ./my-project --output ./analysis.json --report ./summary.md
+```
+
+### Direct Docker Usage
+
+```bash
+# Analyze codebase
+docker run --rm \
+  -v /path/to/code:/input:ro \
+  -v /path/to/output:/output:rw \
+  enhanced-code-analyzer:latest \
+  --input /input --output /output/analysis.json
+
+# With resource limits
+docker run --rm \
+  --memory 2g --cpus 1.0 \
+  -v /path/to/code:/input:ro \
+  -v /path/to/output:/output:rw \
+  enhanced-code-analyzer:latest
+```
+
+## 🏗 Architecture Design
 
 ### Core Components
 
@@ -238,37 +317,21 @@ result = analyzer.analyze_codebase(
    - Python API wrapper
    - Result processing
 
-3. **Language Detectors**
-   - File extension mapping
-   - Content-based detection
-   - Fallback mechanisms
+3. **Graph Converter** (`graph_converter.py`)
+   - CCM to architecture graph conversion
+   - Package hierarchy extraction
+   - Frontend-friendly format output
 
 ### Analysis Pipeline
 
 ```
 Input Code → Language Detection → Tree-sitter/Regex Parsing → 
-CCM Conversion → Relationship Resolution → JSON Output
+CCM Conversion → Relationship Resolution → JSON Output → Graph Conversion → Visualization Format
 ```
 
-## 🐳 Docker Details
+## 📈 Performance Benchmarks
 
-### Image Features
-- **Multi-language support**: Pre-installed parsers for 20+ languages
-- **Lightweight**: Based on Python 3.10 Bullseye
-- **Secure**: Runs without network access
-- **Resource controlled**: Memory and CPU limits
-- **Health checks**: Built-in container health monitoring
-
-### Image Labels
-```dockerfile
-LABEL features="functions,classes,imports,exports,comments,docstrings,type_annotations"
-LABEL languages="python,javascript,typescript,java,c,cpp,go,rust,ruby,php"
-LABEL supported_extensions=".py,.js,.jsx,.ts,.tsx,.java,.c,.cpp,.cc,.cxx,.h,.hpp,.go,.rs,.rb,.php"
-```
-
-## 📈 Performance
-
-### Benchmarks
+### Processing Time
 - **Small projects** (< 100 files): 5-15 seconds
 - **Medium projects** (100-1000 files): 30-120 seconds  
 - **Large projects** (1000+ files): 2-10 minutes
@@ -294,12 +357,12 @@ Extract and organize:
 - **Class hierarchies** and relationships
 - **Module dependencies** and imports
 
-### Code Analysis Tools
+### Architecture Visualization
 Support for:
-- **Static analysis** tools
-- **Code review** automation
-- **Refactoring** assistance
-- **Architecture** visualization
+- **Architecture diagram** generation
+- **Dependency relationship** visualization
+- **Module structure** display
+- **Code complexity** analysis
 
 ## 🚨 Troubleshooting
 
@@ -358,5 +421,8 @@ result = analyzer.analyze_codebase("./my-project")
 
 MIT
 
+---
 
-For more information, see the example usage in `example.py` or run the analyzer with `--help` for command-line options. 
+For more information, see the example usage in `example.py` or run the analyzer with `--help` for command-line options.
+
+For detailed graph_converter usage, see the docstrings and examples in `graph_converter.py`.
